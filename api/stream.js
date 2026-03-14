@@ -34,13 +34,18 @@ function parseRSS(xml) {
     let match;
     while ((match = itemRegex.exec(xml)) !== null) {
         const block = match[1];
+
         const title    = (block.match(/<title><!\[CDATA\[([^\]]+)\]\]><\/title>/) || block.match(/<title>([^<]+)<\/title>/))?.[1]?.trim() || '';
-        const magnet   = block.match(/(magnet:\?xt=[^\s<"'&]+)/)?.[1] || '';
-        const torrentUrl = block.match(/<link>(https?:\/\/nyaa\.si\/download\/[^<]+)<\/link>/)?.[1] || '';
+        const infoHash = block.match(/<nyaa:infoHash>([^<]+)<\/nyaa:infoHash>/)?.[1]?.trim() || '';
         const seeders  = parseInt(block.match(/<nyaa:seeders>(\d+)<\/nyaa:seeders>/)?.[1] || '0');
         const size     = block.match(/<nyaa:size>([^<]+)<\/nyaa:size>/)?.[1] || '';
-        const infoHash = block.match(/<nyaa:infoHash>([^<]+)<\/nyaa:infoHash>/)?.[1] || '';
-        if (title) items.push({ title, magnet, torrentUrl, seeders, size, infoHash });
+
+        // Build magnet from infoHash — this is how Nyaa works
+        const magnet = infoHash
+            ? `magnet:?xt=urn:btih:${infoHash}&dn=${encodeURIComponent(title)}&tr=http%3A%2F%2Fnyaa.tracker.wf%3A7777%2Fannounce&tr=udp%3A%2F%2Fopen.stealth.si%3A80%2Fannounce&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&tr=udp%3A%2F%2Fexodus.desync.com%3A6969%2Fannounce`
+            : '';
+
+        if (title && magnet) items.push({ title, magnet, seeders, size, infoHash });
     }
     return items;
 }
