@@ -124,28 +124,12 @@ module.exports = async (req, res) => {
         return res.json({ success: false, error: 'No results found', tried: queries.map(q=>q.q) });
     }
 
-    // For each result, fetch the .torrent file to check for webseeds
-    const results = [];
-    for (const item of bestItems.slice(0, 5)) {
-        let webseeds = [];
-        if (item.torrentUrl) {
-            try {
-                const torrentRes = await fetchUrl(item.torrentUrl, true);
-                if (torrentRes.status === 200) {
-                    webseeds = parseTorrentWebseeds(torrentRes.body);
-                    // Don't send full torrent — just webseeds
-                }
-            } catch(e) { /* no webseeds */ }
-        }
-        results.push({ ...item, webseeds });
-    }
-
-    // Prefer items with webseeds
-    results.sort((a,b) => {
-        if (a.webseeds.length && !b.webseeds.length) return -1;
-        if (!a.webseeds.length && b.webseeds.length) return 1;
-        return b.seeders - a.seeders;
-    });
+    // Return results with torrent file URL so client can fetch directly
+    // Client fetching the .torrent file gives WebTorrent access to webseed URLs
+    const results = bestItems.slice(0, 5).map(item => ({
+        ...item,
+        torrentFileUrl: item.torrentUrl || null
+    }));
 
     return res.json({ success: true, query: usedQuery, results });
 };
