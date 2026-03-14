@@ -40,12 +40,18 @@ function parseRSS(xml) {
         const seeders  = parseInt(block.match(/<nyaa:seeders>(\d+)<\/nyaa:seeders>/)?.[1] || '0');
         const size     = block.match(/<nyaa:size>([^<]+)<\/nyaa:size>/)?.[1] || '';
 
-        // Build magnet from infoHash — this is how Nyaa works
+        // Nyaa torrent download URL is at /download/{id}.torrent
+        // The guid/link looks like: https://nyaa.si/view/123456
+        const viewUrl = block.match(/<guid[^>]*>(https?:\/\/nyaa\.si\/view\/(\d+))<\/guid>/);
+        const torrentId = viewUrl?.[2] || '';
+        const torrentFileUrl = torrentId ? `https://nyaa.si/download/${torrentId}.torrent` : null;
+
+        // Build magnet from infoHash
         const magnet = infoHash
-            ? `magnet:?xt=urn:btih:${infoHash}&dn=${encodeURIComponent(title)}&tr=http%3A%2F%2Fnyaa.tracker.wf%3A7777%2Fannounce&tr=udp%3A%2F%2Fopen.stealth.si%3A80%2Fannounce&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&tr=udp%3A%2F%2Fexodus.desync.com%3A6969%2Fannounce`
+            ? 'magnet:?xt=urn:btih:' + infoHash + '&dn=' + encodeURIComponent(title) + '&tr=http://nyaa.tracker.wf:7777/announce&tr=udp://open.stealth.si:80/announce&tr=udp://tracker.opentrackr.org:1337/announce'
             : '';
 
-        if (title && magnet) items.push({ title, magnet, seeders, size, infoHash });
+        if (title && magnet) items.push({ title, magnet, torrentFileUrl, seeders, size, infoHash });
     }
     return items;
 }
