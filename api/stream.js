@@ -78,6 +78,13 @@ function parseTorrentWebseeds(buf) {
     return webseeds;
 }
 
+// Debug: return raw RSS for inspection
+async function getRawRSS(q) {
+    const url = `https://nyaa.si/?page=rss&q=${encodeURIComponent(q)}&c=1_2&f=0`;
+    const r = await fetchUrl(url);
+    return r.body;
+}
+
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -85,8 +92,15 @@ module.exports = async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     if (req.method === 'OPTIONS') { res.status(200).end(); return; }
 
-    const { title, ep } = req.query;
+    const { title, ep, raw } = req.query;
     if (!title || !ep) return res.status(400).json({ error: 'Provide ?title=&ep=' });
+
+    // Debug: return raw RSS XML as text
+    if (raw) {
+        const xml = await getRawRSS(title + ' - ' + String(ep).padStart(2,'0'));
+        res.setHeader('Content-Type', 'text/plain');
+        return res.send(xml.slice(0, 5000));
+    }
 
     const epPadded = String(ep).padStart(2, '0');
     const queries = [
