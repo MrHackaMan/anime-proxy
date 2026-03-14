@@ -128,8 +128,7 @@ module.exports = async (req, res) => {
                 const torrentRes = await fetchUrl(item.torrentUrl, true);
                 if (torrentRes.status === 200) {
                     webseeds = parseTorrentWebseeds(torrentRes.body);
-                    // Also pass the torrent as base64 so client can use it directly
-                    item.torrentBase64 = torrentRes.body.toString('base64');
+                    // Don't send full torrent — just webseeds
                 }
             } catch(e) { /* no webseeds */ }
         }
